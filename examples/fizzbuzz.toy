@@ -1,0 +1,30 @@
+// Classic FizzBuzz from 1 to 20.
+//
+// toylang has no '%' operator, so this defines its own integer remainder
+// via repeated subtraction -- also a nice small demo of function calls
+// and while loops working together.
+fn remainder(a, b) {
+    let r = a;
+    while (r >= b) {
+        r = r - b;
+    }
+    return r;
+}
+
+let n = 1;
+while (n <= 20) {
+    let by3 = remainder(n, 3) == 0;
+    let by5 = remainder(n, 5) == 0;
+
+    if (by3 && by5) {
+        print("FizzBuzz");
+    } else if (by3) {
+        print("Fizz");
+    } else if (by5) {
+        print("Buzz");
+    } else {
+        print(n);
+    }
+
+    n = n + 1;
+}

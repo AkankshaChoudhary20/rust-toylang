@@ -1,0 +1,40 @@
+// Demonstrates first-class functions and closures that correctly capture
+// their defining lexical scope: each call to make_counter() creates a
+// fresh `count` variable, and the returned `increment` function keeps a
+// live reference to that specific variable, not a copy of it.
+fn make_counter() {
+    let count = 0;
+    fn increment() {
+        count = count + 1;
+        return count;
+    }
+    return increment;
+}
+
+let counterA = make_counter();
+let counterB = make_counter();
+
+print(counterA()); // 1
+print(counterA()); // 2
+print(counterA()); // 3
+
+// counterB is an independent closure instance -- it must start at 1, not 4.
+print(counterB()); // 1
+print(counterB()); // 2
+
+// counterA keeps its own state even after counterB has been called.
+print(counterA()); // 4
+
+// Closures can also capture non-numeric outer state, e.g. building a
+// "greeter" bound to a name.
+fn make_greeter(name) {
+    fn greet() {
+        print("Hello, " + name + "!");
+    }
+    return greet;
+}
+
+let greetAda = make_greeter("Ada");
+let greetLin = make_greeter("Lin");
+greetAda();
+greetLin();
