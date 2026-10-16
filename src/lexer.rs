@@ -156,7 +156,7 @@ impl Lexer {
                     }
                 }
                 '"' => self.string(line)?,
-                c if c.is_ascii_digit() => self.number(c),
+                c if c.is_ascii_digit() => self.number(c, line)?,
                 c if is_ident_start(c) => self.identifier(c),
                 other => {
                     return Err(LexError {
@@ -237,7 +237,7 @@ impl Lexer {
         Ok(TokenKind::Str(s))
     }
 
-    fn number(&mut self, first: char) -> TokenKind {
+    fn number(&mut self, first: char, line: usize) -> Result<TokenKind, LexError> {
         let mut s = String::new();
         s.push(first);
         while let Some(c) = self.peek() {
@@ -262,7 +262,13 @@ impl Lexer {
                 }
             }
         }
-        TokenKind::Number(s.parse::<f64>().expect("validated numeric literal"))
+        match s.parse::<f64>() {
+            Ok(value) if value.is_finite() => Ok(TokenKind::Number(value)),
+            _ => Err(LexError {
+                message: "numeric literal is outside the finite number range".into(),
+                line,
+            }),
+        }
     }
 
     fn identifier(&mut self, first: char) -> TokenKind {
@@ -388,6 +394,15 @@ mod tests {
                 TokenKind::Eof
             ]
         );
+    }
+
+    #[test]
+    fn rejects_overflowing_numeric_literals() {
+        let source = format!("\nlet huge = {};", "9".repeat(400));
+        let error = tokenize(&source).unwrap_err();
+        assert_eq!(error.line, 2);
+        assert!(error.message.contains("finite number range"));
+        assert!(tokenize(&"9".repeat(300)).is_ok());
     }
 
     #[test]
