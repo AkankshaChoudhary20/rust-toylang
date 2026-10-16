@@ -189,7 +189,8 @@ impl Interpreter {
             func: Box::new(move |args: &[Value]| {
                 let rendered: Vec<String> = args.iter().map(|v| v.to_string()).collect();
                 let mut out = output.borrow_mut();
-                let _ = writeln!(out, "{}", rendered.join(" "));
+                writeln!(out, "{}", rendered.join(" "))
+                    .map_err(|error| format!("failed to write output: {}", error))?;
                 Ok(Value::Nil)
             }),
         };
@@ -462,6 +463,26 @@ fn compare(l: Value, r: Value, line: usize, pred: impl Fn(std::cmp::Ordering) ->
 #[cfg(test)]
 mod tests {
     use crate::run_and_capture;
+
+    #[test]
+    fn output_write_errors_are_reported_with_the_call_line() {
+        use std::{cell::RefCell, io::{self, Write}, rc::Rc};
+        struct FailingWriter;
+        impl Write for FailingWriter {
+            fn write(&mut self, _: &[u8]) -> io::Result<usize> {
+                Err(io::Error::new(io::ErrorKind::BrokenPipe, "reader closed"))
+            }
+            fn flush(&mut self) -> io::Result<()> { Ok(()) }
+        }
+        let output = Rc::new(RefCell::new(FailingWriter));
+        let mut interpreter = super::Interpreter::new(output);
+        let tokens = crate::lexer::tokenize("\nprint(42);").unwrap();
+        let program = crate::parser::parse(tokens).unwrap();
+        let error = interpreter.interpret(&program).unwrap_err();
+        assert_eq!(error.line, 2);
+        assert!(error.message.contains("failed to write output"));
+        assert!(error.message.contains("reader closed"));
+    }
 
     #[test]
     fn arithmetic_precedence() {
