@@ -259,3 +259,9 @@ out of scope:
   language is meant to write).
 - No tail-call optimization; deep recursion is bounded by the native Rust
   call stack.
+
+## Continuous integration
+
+CI runs `cargo test --locked` (including integration and documentation tests) and builds release binaries with the stable Rust toolchain.
+
+Checks run on pushes and pull requests and can be started manually from the Actions tab. The workflow has read-only repository permissions, cancels superseded runs, and stops after 15 minutes.
