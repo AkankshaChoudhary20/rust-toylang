@@ -74,7 +74,7 @@ pub struct Lexer {
 impl Lexer {
     pub fn new(source: &str) -> Self {
         Lexer {
-            chars: source.chars().collect(),
+            chars: source.strip_prefix('\u{feff}').unwrap_or(source).chars().collect(),
             pos: 0,
             line: 1,
         }
@@ -344,6 +344,12 @@ mod tests {
             .into_iter()
             .map(|t| t.kind)
             .collect()
+    }
+
+    #[test]
+    fn utf8_bom_is_accepted_only_at_start_of_source() {
+        assert_eq!(kinds("\u{feff}let x = 5;"), kinds("let x = 5;"));
+        assert!(tokenize("let \u{feff}x = 5;").is_err());
     }
 
     #[test]
