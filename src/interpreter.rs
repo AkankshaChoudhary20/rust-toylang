@@ -390,7 +390,7 @@ impl Interpreter {
         use BinaryOp::*;
         match op {
             Add => match (l, r) {
-                (Value::Number(a), Value::Number(b)) => Ok(Value::Number(a + b)),
+                (Value::Number(a), Value::Number(b)) => finite_result(a + b, line),
                 (Value::Str(a), Value::Str(b)) => Ok(Value::Str(a + &b)),
                 (a, b) => err(
                     line,
@@ -407,7 +407,7 @@ impl Interpreter {
                 (Value::Number(_), Value::Number(b)) if b == 0.0 => {
                     err(line, "division by zero")
                 }
-                (Value::Number(a), Value::Number(b)) => Ok(Value::Number(a / b)),
+                (Value::Number(a), Value::Number(b)) => finite_result(a / b, line),
                 (a, b) => err(
                     line,
                     format!(
@@ -427,9 +427,13 @@ impl Interpreter {
     }
 }
 
+fn finite_result(value: f64, line: usize) -> Result<Value, RuntimeError> {
+    if value.is_finite() { Ok(Value::Number(value)) } else { err(line, "numeric result is not finite") }
+}
+
 fn numeric_op(l: Value, r: Value, line: usize, verb: &str, f: impl Fn(f64, f64) -> f64) -> Result<Value, RuntimeError> {
     match (l, r) {
-        (Value::Number(a), Value::Number(b)) => Ok(Value::Number(f(a, b))),
+        (Value::Number(a), Value::Number(b)) => finite_result(f(a, b), line),
         (a, b) => err(
             line,
             format!(
