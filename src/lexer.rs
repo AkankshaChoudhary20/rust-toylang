@@ -74,7 +74,7 @@ pub struct Lexer {
 impl Lexer {
     pub fn new(source: &str) -> Self {
         Lexer {
-            chars: source.chars().collect(),
+            chars: source.strip_prefix('\u{feff}').unwrap_or(source).chars().collect(),
             pos: 0,
             line: 1,
         }
